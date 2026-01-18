@@ -47,6 +47,39 @@ func RelevanceLookup(term string, engine SearchEngine) []DocumentID {
 	panic("not implemented")
 }
 
+func FindFiles(directory string) ([]DocumentID, error) {
+	entries, err := os.ReadDir(directory)
+
+	documents := make([]DocumentID, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		entryPath := directory + string(os.PathSeparator) + entry.Name()
+		if entry.IsDir() {
+			subdirEntries, err := FindFiles(entryPath)
+			if err != nil {
+				return nil, err
+			}
+			documents = append(documents, subdirEntries...)
+		} else {
+			documents = append(documents, DocumentID(entryPath))
+		}
+	}
+
+	return documents, nil
+}
+
+func ReadDirectory(directory string) error {
+	files, err := FindFiles(directory)
+	if err != nil {
+		return err
+	}
+	fmt.Println(files)
+	return nil
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Missing required command line argument DIRECTORY. Aborting.")
@@ -54,9 +87,12 @@ func main() {
 	}
 
 	directory := os.Args[1]
-	fmt.Println("reading", directory) // TODO: Remove, replace with actually reading stuff
 
-	// TODO: Read the directory
+	err := ReadDirectory(directory)
+	if err != nil {
+		fmt.Println("Failed to read the directory: ", err)
+		os.Exit(1)
+	}
 
 	// Input read loop by the example of https://stackoverflow.com/a/49715256.
 	cliReader := bufio.NewScanner(os.Stdin)
