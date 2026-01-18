@@ -1,5 +1,11 @@
 package main
 
+import (
+	"bufio"
+	"fmt"
+	"os"
+)
+
 // DocumentID uniquely identifies a document by its filepath.
 type DocumentID string
 
@@ -42,4 +48,26 @@ func RelevanceLookup(term string, engine SearchEngine) []DocumentID {
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Missing required command line argument DIRECTORY. Aborting.")
+		os.Exit(1)
+	}
+
+	directory := os.Args[1]
+	fmt.Println("reading", directory) // TODO: Remove, replace with actually reading stuff
+
+	// TODO: Read the directory
+
+	// Input read loop by the example of https://stackoverflow.com/a/49715256.
+	cliReader := bufio.NewScanner(os.Stdin)
+	for {
+		cliReader.Scan()
+		term := cliReader.Text()
+		if len(term) > 0 {
+			fmt.Println("== " + term)
+			// TODO: Search for the term and output documents.
+		} else {
+			break
+		}
+	}
 }
