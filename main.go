@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -32,6 +34,8 @@ type DocumentFrequencyMapping struct {
 	frequency DocTermFrequency
 }
 
+var WordRegex = regexp.MustCompile("[a-zA-Z'-]+") // FIXME: Fix this so that it doesn't allow multiple dashes.
+
 // DocumentsContaining returns the set of documents that contain the given term.
 func (se *SearchEngine) DocumentsContaining(term string) []DocumentID {
 	panic("not implemented")
@@ -52,7 +56,9 @@ func AddDocument(engine SearchEngine, document DocumentID, frequency DocTermFreq
 func ReduceDocuments(documents chan DocumentFrequencyMapping, output chan SearchEngine) {
 	searchEngine := SearchEngine{}
 	defer func() { output <- searchEngine }()
-	panic("not implemented")
+	for document := range documents {
+		searchEngine[string(document.document)] = document.frequency
+	}
 }
 
 // TermFrequency implements the term frequency td(t, d) for a given term and document.
@@ -83,7 +89,24 @@ func Frequencies(document DocumentID, ch chan DocumentFrequencyMapping) {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	fmt.Println(lines)
+
+	// LABEL Split into words and count them.
+	var wordCounts DocTermFrequency = make(map[string]int)
+	for _, line := range lines {
+		words := WordRegex.FindAllString(line, -1)
+		for _, word := range words {
+			lowercaseWord := strings.ToLower(word)
+			if count, ok := wordCounts[lowercaseWord]; ok {
+				wordCounts[lowercaseWord] = count + 1
+			} else {
+				wordCounts[lowercaseWord] = 1
+			}
+		}
+	}
+
+	// LABEL PublishDocumentFrequencyMapping
+	// Push the computed mapping to the channel.
+	ch <- DocumentFrequencyMapping{document, wordCounts}
 }
 
 func FindFiles(directory string) ([]DocumentID, error) {
