@@ -67,8 +67,23 @@ func InverseDocumentFrequency(term string, document []Document) float64 {
 
 // Frequencies calculates the term frequency for a given document.
 // Reads the file from disk using the given DocumentID (= file path), performs all text processing operations, and finally writes the result to the channel.
-func Frequencies(document DocumentID, ch chan DocumentFrequencyMapping) DocTermFrequency {
-	panic("not implemented")
+// Errors are printed to STDERR, but not communicated to any other part of the program. The WaitGroup (orchestrated by the caller) will ensure that there are no deadlocks.
+func Frequencies(document DocumentID, ch chan DocumentFrequencyMapping) {
+	// LABEL ReadFile
+	// Read file into array of lines.
+	file, err := os.Open(string(document))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading %s: %s", document, err)
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lines := make([]string, 0)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	fmt.Println(lines)
 }
 
 func FindFiles(directory string) ([]DocumentID, error) {
