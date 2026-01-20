@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sync"
 )
 
 // DocumentID uniquely identifies a document by its filepath.
@@ -23,13 +24,34 @@ type DocTermFrequency map[string]int
 type CollectionTermFrequency map[string]DocTermFrequency
 
 // SearchEngine represents the search index.
-type SearchEngine map[string]DocumentIDs
+type SearchEngine map[string]DocTermFrequency
 
-func AddDocument(engine SearchEngine, document Document) {
+// DocumentFrequencyMapping is a tuple of a DocumentID and the DocTermFrequency associated with that document.
+type DocumentFrequencyMapping struct {
+	document  DocumentID
+	frequency DocTermFrequency
+}
+
+// DocumentsContaining returns the set of documents that contain the given term.
+func (se *SearchEngine) DocumentsContaining(term string) []DocumentID {
 	panic("not implemented")
 }
 
-func IndexLookup(engine SearchEngine, term string) []DocumentID {
+// RelevantDocuments returns a list of documents relevant for the given term, ordered from most relevant to least relevant.
+func (se *SearchEngine) RelevantDocuments(term string) []DocumentID {
+	panic("not implemented")
+}
+
+// AddDocument adds a given document whose DocTermFrequency has already be determined to the given SearchEngine.
+func AddDocument(engine SearchEngine, document DocumentID, frequency DocTermFrequency) {
+	panic("not implemented")
+}
+
+// ReduceDocuments is the reducer function of the implemented reducer pattern.
+// It reads documents from a channel and creates a search engine, that is passed back through another channel.
+func ReduceDocuments(documents chan DocumentFrequencyMapping, output chan SearchEngine) {
+	searchEngine := SearchEngine{}
+	defer func() { output <- searchEngine }()
 	panic("not implemented")
 }
 
@@ -43,7 +65,9 @@ func InverseDocumentFrequency(term string, document []Document) float64 {
 	panic("not implemented")
 }
 
-func RelevanceLookup(term string, engine SearchEngine) []DocumentID {
+// Frequencies calculates the term frequency for a given document.
+// Reads the file from disk using the given DocumentID (= file path), performs all text processing operations, and finally writes the result to the channel.
+func Frequencies(document DocumentID, ch chan DocumentFrequencyMapping) DocTermFrequency {
 	panic("not implemented")
 }
 
@@ -71,13 +95,36 @@ func FindFiles(directory string) ([]DocumentID, error) {
 	return documents, nil
 }
 
-func ReadDirectory(directory string) error {
+func ReadDirectory(directory string) (SearchEngine, error) {
 	files, err := FindFiles(directory)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	fmt.Println(files)
-	return nil
+	// XXX: Right now, we read all files synchronously and then dump them all in a channel.
+	// We could also write files into a channel directly and start processing while we're still searching for files,
+	// but we're skipping that for now because finding the files should be very fast (there aren't a lot I guess?)
+	// and it reduces complexity a bit.
+
+	// LABEL CreateDocTermFreqencyChannelAndGoroutines
+	// Create a channel and launch a goroutine for each file, writing results to the channel.
+	chFrequencies := make(chan DocumentFrequencyMapping)
+	wgFrequencies := new(sync.WaitGroup)
+	for _, file := range files {
+		wgFrequencies.Go(func() {
+			Frequencies(file, chFrequencies)
+		})
+	}
+
+	// LABEL InitReducer
+	// Initialize a goroutine to read from the channel and aggregate everything into a SearchEngine object.
+	chSearchEngine := make(chan SearchEngine)
+	go ReduceDocuments(chFrequencies, chSearchEngine)
+
+	wgFrequencies.Wait()
+	close(chFrequencies)
+
+	searchEngine := <-chSearchEngine
+	return searchEngine, nil
 }
 
 func main() {
@@ -88,11 +135,13 @@ func main() {
 
 	directory := os.Args[1]
 
-	err := ReadDirectory(directory)
+	searchEngine, err := ReadDirectory(directory)
 	if err != nil {
 		fmt.Println("Failed to read the directory: ", err)
 		os.Exit(1)
 	}
+
+	fmt.Println(searchEngine)
 
 	// Input read loop by the example of https://stackoverflow.com/a/49715256.
 	cliReader := bufio.NewScanner(os.Stdin)
