@@ -1,6 +1,9 @@
 = README
 
-Describe anything in particular about how to use your submission here.
-This file must be in UTF9 coded plain text. This includes files in Markdown, Asciidoc, and reStructured Text.
+# Running the submission:
+To run our submission type `go run main.go [dir path]` and it will show word requencies map for the documents found in the given directory path. After that it will wait for the user input but will not do anything (see question 1.)
 
-For example: Run this submission by using `go run hello.go` and it prints `Hello, world.`
+Our program is already concurrent and run `Frequencies()` function as a GO routines for each of the documents.
+
+# Questions:
+1. what do you mean by "print relevant words" in the first milestone?
