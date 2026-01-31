@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -50,9 +51,46 @@ func (se *SearchEngine) IndexLookup(term string) []DocumentID {
 	return result
 }
 
-// RelevantDocuments returns a list of documents relevant for the given term, ordered from most relevant to least relevant.
-func (se *SearchEngine) RelevantDocuments(term string) []DocumentID {
-	panic("not implemented")
+// RelevanceLookup returns a list of documents relevant for the given term, ordered from most relevant to least relevant.
+func (se *SearchEngine) RelevanceLookup(term string) ([]DocumentID, error) {
+	docIDs := se.IndexLookup(term)
+
+	type DocumentTfIdfMapping struct {
+		document DocumentID
+		tfidf    float64
+	}
+
+	docs := make([]DocumentTfIdfMapping, 0)
+	for _, docID := range docIDs {
+		tfidf, err := se.CountIdf(term, docID)
+		if err != nil {
+			return nil, err
+		}
+		docs = append(docs, DocumentTfIdfMapping{docID, *tfidf})
+	}
+
+	slices.SortFunc(docs, func(a, b DocumentTfIdfMapping) int {
+		if a.tfidf < b.tfidf {
+			return -1
+		} else if a.tfidf > b.tfidf {
+			return 1
+		}
+		// Equal tfidf. Tiebreaker on the document ID, that's all we have.
+		if a.document < b.document {
+			return -1
+		} else if a.document > b.document {
+			return 1
+		} else {
+			// docIDs is generated from IndexLookup, which should return a set...
+			panic("The same document is in this list more than once??")
+		}
+	})
+
+	result := make([]DocumentID, 0)
+	for _, mapping := range docs {
+		result = append(result, mapping.document)
+	}
+	return result, nil
 }
 
 // InverseDocumentFrequency implements the inverse document frequency idf(t, D) for a given term and set of Documents.
@@ -90,6 +128,7 @@ func (se *SearchEngine) TermFrequency(term string, document DocumentID) (*float6
 	return &result, nil
 }
 
+// CountIdf implements tfidf.
 func (se *SearchEngine) CountIdf(term string, document DocumentID) (*float64, error) {
 	td, err := se.TermFrequency(term, document)
 	if err != nil {
