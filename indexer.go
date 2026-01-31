@@ -37,6 +37,12 @@ type DocumentFrequencyMapping struct {
 	frequency DocTermFrequency
 }
 
+// DocumentTfIdfMapping is a tuple of a DocumentID and a TdIdf value.
+type DocumentTfIdfMapping struct {
+	document DocumentID
+	tfidf    float64
+}
+
 var WordRegex = regexp.MustCompile("[a-zA-Z]+(['-][a-zA-Z]+)*")
 
 // IndexLookup returns the set of documents that contain the given term.
@@ -52,13 +58,8 @@ func (se *SearchEngine) IndexLookup(term string) []DocumentID {
 }
 
 // RelevanceLookup returns a list of documents relevant for the given term, ordered from most relevant to least relevant.
-func (se *SearchEngine) RelevanceLookup(term string) ([]DocumentID, error) {
+func (se *SearchEngine) RelevanceLookup(term string) ([]DocumentTfIdfMapping, error) {
 	docIDs := se.IndexLookup(term)
-
-	type DocumentTfIdfMapping struct {
-		document DocumentID
-		tfidf    float64
-	}
 
 	docs := make([]DocumentTfIdfMapping, 0)
 	for _, docID := range docIDs {
@@ -70,15 +71,15 @@ func (se *SearchEngine) RelevanceLookup(term string) ([]DocumentID, error) {
 	}
 
 	slices.SortFunc(docs, func(a, b DocumentTfIdfMapping) int {
-		if a.tfidf < b.tfidf {
+		if a.tfidf > b.tfidf {
 			return -1
-		} else if a.tfidf > b.tfidf {
+		} else if a.tfidf < b.tfidf {
 			return 1
 		}
 		// Equal tfidf. Tiebreaker on the document ID, that's all we have.
-		if a.document < b.document {
+		if a.document > b.document {
 			return -1
-		} else if a.document > b.document {
+		} else if a.document < b.document {
 			return 1
 		} else {
 			// docIDs is generated from IndexLookup, which should return a set...
@@ -86,11 +87,7 @@ func (se *SearchEngine) RelevanceLookup(term string) ([]DocumentID, error) {
 		}
 	})
 
-	result := make([]DocumentID, 0)
-	for _, mapping := range docs {
-		result = append(result, mapping.document)
-	}
-	return result, nil
+	return docs, nil
 }
 
 // InverseDocumentFrequency implements the inverse document frequency idf(t, D) for a given term and set of Documents.
@@ -263,10 +260,17 @@ func main() {
 	cliReader := bufio.NewScanner(os.Stdin)
 	for {
 		cliReader.Scan()
-		term := cliReader.Text()
+		term := strings.ToLower(cliReader.Text())
 		if len(term) > 0 {
-			fmt.Println("== " + term)
-			// TODO: Search for the term and output documents.
+			documents, err := searchEngine.RelevanceLookup(term)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error encountered during the relevance lookup for %s: %s", term, err)
+				continue
+			}
+			fmt.Printf("== %s (%d)\n", term, len(documents))
+			for _, document := range documents {
+				fmt.Printf("%s,%f\n", document.document, document.tfidf)
+			}
 		} else {
 			break
 		}
