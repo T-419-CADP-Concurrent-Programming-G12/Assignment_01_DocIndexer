@@ -34,7 +34,7 @@ type DocumentFrequencyMapping struct {
 	frequency DocTermFrequency
 }
 
-var WordRegex = regexp.MustCompile("[a-zA-Z'-]+") // FIXME: Fix this so that it doesn't allow multiple dashes.
+var WordRegex = regexp.MustCompile("[a-zA-Z]+(['-][a-zA-Z]+)*")
 
 // DocumentsContaining returns the set of documents that contain the given term.
 func (se *SearchEngine) DocumentsContaining(term string) []DocumentID {
