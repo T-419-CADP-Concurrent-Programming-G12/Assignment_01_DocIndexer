@@ -1,7 +1,7 @@
 = README
 
 # Running the submission:
-To run our submission type `go run main.go [dir path]` and it will show word frequencies map for the documents found in the given directory path. After that it will wait for the user input but will not do anything with it (see question 1.).
+To run our submission type `go run indexer.go [dir path]` and it will show word frequencies map for the documents found in the given directory path. After that it will wait for the user input but will not do anything with it (see question 1.).
 
 Our program is already concurrent and run `Frequencies()` function as a GO routines for each of the documents.
 
