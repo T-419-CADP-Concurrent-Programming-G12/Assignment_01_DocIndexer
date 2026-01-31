@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -52,8 +53,25 @@ func InverseDocumentFrequency(term string, document []Document) float64 {
 }
 
 // TermFrequency implements the term frequency td(t, d) for a given term and document.
-func TermFrequency(term string, document string) float64 {
-	panic("not implemented")
+func (se *SearchEngine) TermFrequency(term string, document string) (*float64, error) {
+	terms, ok := (*se)[document]
+	if !ok {
+		return nil, errors.New("tried to determine the TermFrequency for a document that does not exist")
+	}
+	termCount, ok := terms[term]
+	if !ok {
+		// No need to error here, 0 is a valid result.
+		result := 0.0
+		return &result, nil
+	}
+	// PERF: We could adjust the DocTermFrequency to hold the count, so that we don't have to recalculate it every time.
+	// Lazy for now, because I don't know if it's needed.
+	total := 0
+	for _, count := range terms {
+		total += count
+	}
+	result := float64(termCount) / float64(total)
+	return &result, nil
 }
 
 // ReduceDocuments is the reducer function of the implemented reducer pattern.
