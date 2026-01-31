@@ -46,8 +46,13 @@ func (se *SearchEngine) RelevantDocuments(term string) []DocumentID {
 	panic("not implemented")
 }
 
-// AddDocument adds a given document whose DocTermFrequency has already be determined to the given SearchEngine.
-func AddDocument(engine SearchEngine, document DocumentID, frequency DocTermFrequency) {
+// InverseDocumentFrequency implements the inverse document frequency idf(t, D) for a given term and set of Documents.
+func InverseDocumentFrequency(term string, document []Document) float64 {
+	panic("not implemented")
+}
+
+// TermFrequency implements the term frequency td(t, d) for a given term and document.
+func TermFrequency(term string, document string) float64 {
 	panic("not implemented")
 }
 
@@ -59,16 +64,6 @@ func ReduceDocuments(documents chan DocumentFrequencyMapping, output chan Search
 	for document := range documents {
 		searchEngine[string(document.document)] = document.frequency
 	}
-}
-
-// TermFrequency implements the term frequency td(t, d) for a given term and document.
-func TermFrequency(term string, document string) float64 {
-	panic("not implemented")
-}
-
-// InverseDocumentFrequency implements the inverse document frequency idf(t, D) for a given term and set of Documents.
-func InverseDocumentFrequency(term string, document []Document) float64 {
-	panic("not implemented")
 }
 
 // Frequencies calculates the term frequency for a given document.
