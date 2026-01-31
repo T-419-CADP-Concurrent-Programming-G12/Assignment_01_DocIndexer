@@ -71,15 +71,16 @@ func (se *SearchEngine) RelevanceLookup(term string) ([]DocumentTfIdfMapping, er
 	}
 
 	slices.SortFunc(docs, func(a, b DocumentTfIdfMapping) int {
+		// Sort by tfidf, descending.
 		if a.tfidf > b.tfidf {
 			return -1
 		} else if a.tfidf < b.tfidf {
 			return 1
 		}
-		// Equal tfidf. Tiebreaker on the document ID, that's all we have.
-		if a.document > b.document {
+		// If tdidf is equal, sort by document ID, ascending.
+		if a.document < b.document {
 			return -1
-		} else if a.document < b.document {
+		} else if a.document > b.document {
 			return 1
 		} else {
 			// docIDs is generated from IndexLookup, which should return a set...
