@@ -38,9 +38,16 @@ type DocumentFrequencyMapping struct {
 
 var WordRegex = regexp.MustCompile("[a-zA-Z]+(['-][a-zA-Z]+)*")
 
-// DocumentsContaining returns the set of documents that contain the given term.
-func (se *SearchEngine) DocumentsContaining(term string) []DocumentID {
-	panic("not implemented")
+// IndexLookup returns the set of documents that contain the given term.
+func (se *SearchEngine) IndexLookup(term string) []DocumentID {
+	result := make([]DocumentID, 0)
+	for doc, terms := range *se {
+		_, ok := terms[term]
+		if ok {
+			result = append(result, DocumentID(doc))
+		}
+	}
+	return result
 }
 
 // RelevantDocuments returns a list of documents relevant for the given term, ordered from most relevant to least relevant.
@@ -62,8 +69,8 @@ func (se *SearchEngine) InverseDocumentFrequency(term string) float64 {
 }
 
 // TermFrequency implements the term frequency td(t, d) for a given term and document.
-func (se *SearchEngine) TermFrequency(term string, document string) (*float64, error) {
-	terms, ok := (*se)[document]
+func (se *SearchEngine) TermFrequency(term string, document DocumentID) (*float64, error) {
+	terms, ok := (*se)[string(document)]
 	if !ok {
 		return nil, errors.New("tried to determine the TermFrequency for a document that does not exist")
 	}
@@ -80,6 +87,16 @@ func (se *SearchEngine) TermFrequency(term string, document string) (*float64, e
 		total += count
 	}
 	result := float64(termCount) / float64(total)
+	return &result, nil
+}
+
+func (se *SearchEngine) CountIdf(term string, document DocumentID) (*float64, error) {
+	td, err := se.TermFrequency(term, document)
+	if err != nil {
+		return nil, err
+	}
+	idf := se.InverseDocumentFrequency(term)
+	result := *td * idf
 	return &result, nil
 }
 
