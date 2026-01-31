@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strings"
@@ -48,8 +49,16 @@ func (se *SearchEngine) RelevantDocuments(term string) []DocumentID {
 }
 
 // InverseDocumentFrequency implements the inverse document frequency idf(t, D) for a given term and set of Documents.
-func InverseDocumentFrequency(term string, document []Document) float64 {
-	panic("not implemented")
+func (se *SearchEngine) InverseDocumentFrequency(term string) float64 {
+	numDocuments := len(*se)
+	numDocumentsContaining := 0
+	for _, doc := range *se {
+		_, ok := doc[term]
+		if ok {
+			numDocumentsContaining += 1
+		}
+	}
+	return math.Log(float64(numDocuments) / float64(numDocumentsContaining))
 }
 
 // TermFrequency implements the term frequency td(t, d) for a given term and document.
