@@ -254,8 +254,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(searchEngine)
-
 	// Input read loop by the example of https://stackoverflow.com/a/49715256.
 	cliReader := bufio.NewScanner(os.Stdin)
 	for {
